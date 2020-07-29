@@ -4,6 +4,7 @@ class HololiveStream:
     def __init__(self):
         channelID = None
         channelTitle = None
+        channelImage = None
         streamID = None
         streamTitle = None
         streamThumbnail = None
