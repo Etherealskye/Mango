@@ -50,44 +50,46 @@ async def Hololive(ctx,arg):
     #ID's we will be using for the channel and livestream to send requests
     stream = HololiveStream()
     
-    #If we get a matching channel, we get the id. Otherwise, we tell the user that no matching channel was found in the search
+    #If we get a matching channel, we get the id and title. Otherwise, we tell the user that no matching channel was found in the search 
+    #(Hololive streamers will usually be at the top of the list due to their distinct names, no need to check) - m!hologen and m!holoselect will be used for 
+    #direct selection anyways
     if len(initialSearch)>0:
         stream.channelID = initialSearch[0]['channel_id']
-        
+        stream.channelTitle = initialSearch[0]['channel_title']
+        print(stream.channelID) 
     else:
         await ctx.send('No channel was found, please double check spelling and search again~')
-
-    #If the channelID exists, proceed to see if they are live
-    print(stream.channelID)
-    channelState = yt.search(channel_id=stream.channelID, search_type='video', event_type='live')
     
-    #If we get a response (meaning that the channel is live), proceed to grab the details of the stream and send it as an embed
-    if len(channelState)>0:
-        stream.streamID = channelState[0]['video_id']
-        stream.streamTitle = channelState[0]['video_title']
-        stream.streamThumbnail = channelState[0]['video_thumbnail']
-        stream.streamDesc = channelState[0]['video_description']
-        stream.channelTitle = channelState[0]['channel_title']
+    #If the channelID exists, proceed to see if they are live
+    if(hasattr(stream,'channelID')):
+        channelState = yt.search(channel_id=stream.channelID, search_type='video', event_type='live')
         
-        #Send another request to get info on view and like count of the stream
-        videoData = yt.get_video_metadata(stream.streamID)
-        stream.totalViews = videoData['video_view_count']
-        stream.likes = videoData['video_like_count']
-        print("data sucesfully obtained")
+        #If we get a response (meaning that the channel is live), proceed to grab the details of the stream and send it as an embed
+        if len(channelState)>0:
+            stream.streamID = channelState[0]['video_id']
+            stream.streamTitle = channelState[0]['video_title']
+            stream.streamThumbnail = channelState[0]['video_thumbnail']
+            stream.streamDesc = channelState[0]['video_description']
+            
+            #Send another request to get info on view and like count of the stream
+            videoData = yt.get_video_metadata(stream.streamID)
+            stream.totalViews = videoData['video_view_count']
+            stream.likes = videoData['video_like_count']
+            print("data sucesfully obtained")
 
-        #create the embed
-        embed = discord.Embed(title = stream.streamTitle,description = stream.streamDesc,colour = discord.Colour(0x2abdb5))
+            #create the embed
+            embed = discord.Embed(title = stream.streamTitle,description = stream.streamDesc,colour = discord.Colour(0x2abdb5))
+            
+            #Modify some attributes 
+            embed.set_thumbnail(url=stream.streamThumbnail)
+            embed.set_author(name = stream.channelTitle)
+
+            embed.add_field(name = "\u200b",value = "**Total viewers: **" + stream.totalViews + "\n**Likes: **" + stream.likes  ,inline = True)
+
+            await ctx.send(embed=embed)
+
+        else: 
+            await ctx.send(stream.channelTitle + ' is not currently streaming live, upcoming stream info will be added in a future patch~ \n' 
+            +'If the channel displayed is not the hololive streamer you are looking for, try using m!hologen and m!holoselect to directly check their channel')
         
-        #Modify some attributes 
-        embed.set_thumbnail(url=stream.streamThumbnail)
-        embed.set_author(name = stream.channelTitle)
-
-        embed.add_field(name = "\u200b",value = "**Total viewers: **" + stream.totalViews + "\n**Likes: **" + stream.likes  ,inline = True)
-
-        await ctx.send(embed=embed)
-
-    else: 
-        await ctx.send('The channel is not currently streaming live, upcoming stream info will be added in a future patch~')
-        
-
 mango.run(TOKEN)
