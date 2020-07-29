@@ -15,6 +15,9 @@ load_dotenv()
 TOKEN = os.getenv('MANGO_TOKEN')
 YT_KEY = os.getenv('YOUTUBE_KEY')
 
+#Variable used with hololive commands
+selectedGen = -1
+
 #setup bot
 mango = commands.Bot(command_prefix='m!')
 
@@ -74,14 +77,31 @@ async def Hololive(ctx,arg):
         else: 
             await ctx.send(stream.channelTitle + ' is not currently streaming live, upcoming stream info will be added in a future patch~ \n' 
             +'If the channel displayed is not the hololive streamer you are looking for, try using m!hologen and m!holoselect to directly check their channel')
-    
-@mango.command(name='hologen')
-async def hologen(ctx,arg):
-    
 
 @mango.command(name='hololist')
 async def hololist(ctx):
-    pass
+    embed = discord.Embed(title = "List of supported Hololive generations",description = '**0.** Hololive Gen 0\n' + '**1.** Hololive Gen 1\n' + '**2.** Hololive Gen 2\n'
+    + '**3.** Hololive Gen 3\n' + '**4.** Hololive Gen 4\n'+ '**5.** Hololive gamers',
+    colour = discord.Colour(0x42b9f5))
+    embed.set_footer(text = 'use m!hologen <list number> to get more details on each generation')
+    
+    await ctx.send(embed = embed)
+
+@mango.command(name='hologen')
+async def hologen(ctx,arg):
+    selectedGen = int(arg)
+    memberNum = os.getenv(arg + '_SIZE')
+    displayString = ""
+    for i in range(int(memberNum)):
+        currentID = os.getenv(arg+'.'+f'{i}')
+        nameSearch = yt.get_channel_metadata(currentID)
+        channelName = nameSearch['title']
+        displayString = displayString + "**"+f'{i+1}'+ '.** ' + channelName +"\n"
+    
+    embed = discord.Embed(title = 'Members of ' + os.getenv(arg) +':',description = displayString, colour = discord.Colour(0x42b9f5))
+    embed.set_footer(text = 'use m!holoselect <list number> to get more details on each generation')
+    await ctx.send(embed = embed)
+    
 
 @mango.command(name='holoselect')
 async def holoselect(ctx,arg):
