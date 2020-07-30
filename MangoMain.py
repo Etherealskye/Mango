@@ -1,7 +1,7 @@
 import os
 import discord
-from HololiveStream import HololiveStream
 from HololiveStreamer import hololiveStreamer
+from HololiveStream import HololiveStream
 import pandas as pd
 import youtube_api.youtube_api_utils
 from youtube_api import YouTubeDataAPI
@@ -15,8 +15,9 @@ load_dotenv()
 TOKEN = os.getenv('MANGO_TOKEN')
 YT_KEY = os.getenv('YOUTUBE_KEY')
 
-#Variable used with hololive commands
+#Variables used with hololive commands
 selectedGen = -1
+holoStreamers = []
 
 #setup bot
 mango = commands.Bot(command_prefix='m!')
@@ -89,13 +90,18 @@ async def hololist(ctx):
 
 @mango.command(name='hologen')
 async def hologen(ctx,arg):
+    global holoStreamers
+    global selectedGen
     selectedGen = int(arg)
     memberNum = os.getenv(arg + '_SIZE')
     displayString = ""
     for i in range(int(memberNum)):
         currentID = os.getenv(arg+'.'+f'{i}')
-        nameSearch = yt.get_channel_metadata(currentID)
-        channelName = nameSearch['title']
+        nameSearch = yt.search(channel_id=currentID,search_type='channel')
+        channelName = nameSearch[0]['channel_title']
+        channelProfile = nameSearch[0]['video_thumbnail']
+        streamer = hololiveStreamer(group = arg, title = channelName, profile = channelProfile)
+        holoStreamers.append(streamer)
         displayString = displayString + "**"+f'{i+1}'+ '.** ' + channelName +"\n"
     
     embed = discord.Embed(title = 'Members of ' + os.getenv(arg) +':',description = displayString, colour = discord.Colour(0x42b9f5))
@@ -105,6 +111,40 @@ async def hologen(ctx,arg):
 
 @mango.command(name='holoselect')
 async def holoselect(ctx,arg):
-    pass
+    global selectedGen
+    #The ID of the hololive streamer we want to search for
+    searchID = os.getenv(f'{selectedGen}'+'.'+arg)
+    
+    #Create hololive stream object
+    stream = HololiveStream()
+
+    #Send search to api to see if channel is live
+    search = yt.search(channel_id=searchID, search_type='video', event_type='live',)
+    #If we get a response (meaning that the channel is live), proceed to grab the details of the stream and send it as an embed
+    if len(search)>0:
+        stream.streamID = searchID
+        stream.channelTitle = holoStreamers[int(arg)-1].channel_title
+        stream.channelImage = holoStreamers[int(arg)-1].channel_profile
+        stream.streamThumbnail = search[0]['video_thumbnail']
+        stream.streamDesc = search[0]['video_description']
+        
+        #Send another request to get info on view and like count of the stream
+        videoData = yt.get_video_metadata(stream.streamID)
+        stream.totalViews = videoData['video_view_count']
+        stream.likes = videoData['video_like_count']
+        print("data sucesfully obtained")
+
+        #create the embed
+        embed = discord.Embed(title = stream.streamTitle,description = stream.streamDesc,colour = discord.Colour(0x2abdb5))
+        
+        #Modify some attributes 
+        embed.set_thumbnail(url=stream.streamThumbnail)
+        embed.set_author(name = stream.channelTitle,icon_url=stream.channelImage)
+
+        embed.add_field(name = "\u200b",value = "**Total viewers: **" + stream.totalViews + "\n**Likes: **" + stream.likes  ,inline = True)
+
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send(holoStreamers[int(arg)-1].channel_title + ' is not currently streaming live, upcoming stream info will be added in a future patch~')
 
 mango.run(TOKEN)
