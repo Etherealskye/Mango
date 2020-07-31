@@ -75,9 +75,50 @@ async def Hololive(ctx,arg):
 
             await ctx.send(embed=embed)
 
+        #If there are no livestreams, check if there is an upcoming stream or not
         else: 
-            await ctx.send(stream.channelTitle + ' is not currently streaming live, upcoming stream info will be added in a future patch~ \n' 
-            +'If the channel displayed is not the hololive streamer you are looking for, try using m!hologen and m!holoselect to directly check their channel')
+            #Send a second search to see if there are any upcoming streams for the selected hololive streamer
+            secondSearch = yt.search(channel_id=stream.channelID, search_type='video', event_type='upcoming',)
+            #If there is an upcoming stream scheduled, proceed to parse for data
+            if len(secondSearch)>0:
+                stream.streamID = secondSearch[0]['video_id']
+                stream.streamTitle = secondSearch[0]['video_title']
+                stream.streamThumbnail = secondSearch[0]['video_thumbnail']
+                stream.streamDesc = secondSearch[0]['video_description']
+                
+                #Send another request to get info on view and like count of the upcoming stream
+                #print(stream.streamID)
+                videoData = yt.get_video_metadata(stream.streamID)
+                stream.totalViews = videoData['video_view_count']
+                stream.likes = videoData['video_like_count']
+                print("data sucesfully obtained")
+
+                #Check if we actually got an upcoming stream (This is due to youtube's data api returning streams that have just finished as "upcoming" for some reason)
+                #We can only check this by sending a second request to VideoData - the upcoming stream will have 0 views because it has not premeried yet
+                if stream.totalViews == '0':
+                    #Let user know that there are no current live streams, but that there is an upcoming one
+                    await ctx.send(stream.channelTitle + " has no current livestreams, but does have an upcoming stream in the near future:")
+                    #create the embed
+                    embed = discord.Embed(title = stream.streamTitle,description = stream.streamDesc,colour = discord.Colour(0x2abdb5))
+                    
+                    #Modify some attributes 
+                    embed.set_thumbnail(url=stream.streamThumbnail)
+                    embed.set_author(name = stream.channelTitle,icon_url=stream.channelImage)
+                    embed.url='https://www.youtube.com/watch?v='+stream.streamID
+                    embed.set_footer(text='If the channel displayed is not the hololive streamer you are looking for, try using m!hologen and m!holoselect to directly check their channel')
+
+                    embed.add_field(name = "\u200b",value = "**Total viewers: **" + stream.totalViews + "\n**Likes: **" + stream.likes  ,inline = True)
+                        
+                    await ctx.send(embed=embed)
+                
+                elif stream.totalViews != '0':
+                    await ctx.send(stream.channelTitle + ' is not currently streaming live nor has any upcoming livestreams\n' 
+                    +'If the channel displayed is not the hololive streamer you are looking for, try using m!hologen and m!holoselect to directly check their channel')
+
+            #If no upcoming stream, let users know that channel is not live nor are there are any upcoming stream
+            else:
+                await ctx.send(stream.channelTitle + ' is not currently streaming live nor has any upcoming livestreams\n' 
+                +'If the channel displayed is not the hololive streamer you are looking for, try using m!hologen and m!holoselect to directly check their channel')
 
 @mango.command(name='hololist')
 async def hololist(ctx):
@@ -92,10 +133,12 @@ async def hololist(ctx):
 async def hologen(ctx,arg):
     global holoStreamers
     global selectedGen
+    holoStreamers.clear()
     try:
         selectedGen = int(arg)
         memberNum = os.getenv(arg + '_SIZE')
         displayString = ""
+        
         for i in range(int(memberNum)):
             currentID = os.getenv(arg+'.'+f'{i}')
             nameSearch = yt.search(channel_id=currentID,search_type='channel')
@@ -117,7 +160,7 @@ async def hologen(ctx,arg):
 async def holoselect(ctx,arg):
     global selectedGen
     #Makes sure the user has actually selected a generation/group to select a member from
-    print(selectedGen)
+    #print(selectedGen)
     if selectedGen != None:
         try:
             #The ID of the hololive streamer we want to search for
@@ -156,9 +199,48 @@ async def holoselect(ctx,arg):
                 embed.add_field(name = "\u200b",value = "**Total viewers: **" + stream.totalViews + "\n**Likes: **" + stream.likes  ,inline = True)
 
                 await ctx.send(embed=embed)
+            
+            #If no current livestreams, see if there is an upcoming stream or not
             else:
-                await ctx.send(holoStreamers[int(arg)-1].channel_title + ' is not currently streaming live, upcoming stream info will be added in a future patch~')
-        
+                #Send a second search to see if there are any upcoming streams for the selected hololive streamer
+                secondSearch = yt.search(channel_id=searchID, search_type='video', event_type='upcoming',)
+                #If there is an upcoming stream scheduled, proceed to parse for data
+                if len(secondSearch)>0:
+                    stream.streamID = secondSearch[0]['video_id']
+                    stream.streamTitle = secondSearch[0]['video_title']
+                    stream.streamThumbnail = secondSearch[0]['video_thumbnail']
+                    stream.streamDesc = secondSearch[0]['video_description']
+                    
+                    #Send another request to get info on view and like count of the upcoming stream
+                    #print(stream.streamID)
+                    videoData = yt.get_video_metadata(stream.streamID)
+                    stream.totalViews = videoData['video_view_count']
+                    stream.likes = videoData['video_like_count']
+                    print("data sucesfully obtained")
+
+                    #Check if we actually got an upcoming livestream - youtube data api will sometimes give us a livestream that just ended recently
+                    #We can only check this by sending a second request for video metadata and seeing if total views = 0 or not
+                    if stream.totalViews == '0':
+                        #Let user know that there are no current live streams, but that there is an upcoming one
+                        await ctx.send(holoStreamers[int(arg)-1].channel_title + " has no current livestreams, but does have an upcoming stream in the near future:")
+                        #create the embed
+                        embed = discord.Embed(title = stream.streamTitle,description = stream.streamDesc,colour = discord.Colour(0x2abdb5))
+                        
+                        #Modify some attributes 
+                        embed.set_thumbnail(url=stream.streamThumbnail)
+                        embed.set_author(name = stream.channelTitle,icon_url=stream.channelImage)
+                        embed.url='https://www.youtube.com/watch?v='+stream.streamID
+
+                        embed.add_field(name = "\u200b",value = "**Total viewers: **" + stream.totalViews + "\n**Likes: **" + stream.likes  ,inline = True)
+
+                        await ctx.send(embed=embed)
+                    elif stream.totalViews != '0':
+                        await ctx.send(holoStreamers[int(arg)-1].channel_title + ' is not currently streaming live nor has any upcoming livestreams~')
+
+                #If no upcoming stream, let users know that channel is not live nor are there are any upcoming stream
+                else:
+                    await ctx.send(holoStreamers[int(arg)-1].channel_title + ' is not currently streaming live nor has any upcoming livestreams~')
+
         except(ValueError,IndexError):
             await ctx.send('Please select a valid member number from the generation/group!')
     
