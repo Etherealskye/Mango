@@ -1,5 +1,5 @@
 class anime:
-    'the data class for an anime'
+    'Data class for an anime'
 
     def __init__(self, ID, title, rating, status, synopsis, image, episodes):
         ongoingDict = {True:'Ongoing', False:"Completed"}   

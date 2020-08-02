@@ -34,7 +34,8 @@ async def on_ready():
     print(f'{mango.user} is online!')
     #Change status
 
-@mango.command(name = "holostream")
+#Command to let user search for a livestream
+@mango.command(name = "holoStream")
 async def Hololive(ctx,arg):
     initialSearch = yt.search(q=arg, search_type='channel')
     #ID's we will be using for the channel and livestream to send requests
@@ -124,7 +125,8 @@ async def Hololive(ctx,arg):
                 await ctx.send(stream.channelTitle + ' is not currently streaming live nor has any upcoming livestreams\n' 
                 +'If the channel displayed is not the hololive streamer you are looking for, try using m!hologen and m!holoselect to directly check their channel')
 
-@mango.command(name='hololist')
+#Command that lists all the supported hololive groups
+@mango.command(name='holoList')
 async def hololist(ctx):
     embed = discord.Embed(title = "List of supported Hololive generations",description = '**0.** Hololive Gen 0\n' + '**1.** Hololive Gen 1\n' + '**2.** Hololive Gen 2\n'
     + '**3.** Hololive Gen 3\n' + '**4.** Hololive Gen 4\n'+ '**5.** Hololive gamers',
@@ -133,7 +135,8 @@ async def hololist(ctx):
     
     await ctx.send(embed = embed)
 
-@mango.command(name='hologen')
+#Command that brings up the members of a hololive group/generation
+@mango.command(name='holoGen')
 async def hologen(ctx,arg):
     global holoStreamers
     global selectedGen
@@ -159,8 +162,8 @@ async def hologen(ctx,arg):
     except (TypeError, ValueError):
         await ctx.send('Please select a valid number from the displayed list!')
     
-
-@mango.command(name='holoselect')
+#Command used to selelct a hololiveStreamers for more details on if they're livestreaming or not
+@mango.command(name='holoSelect')
 async def holoselect(ctx,arg):
     global selectedGen
     #Makes sure the user has actually selected a generation/group to select a member from
@@ -238,6 +241,7 @@ async def holoselect(ctx,arg):
                         embed.add_field(name = "\u200b",value = "**Total viewers: **" + stream.totalViews + "\n**Likes: **" + stream.likes  ,inline = True)
 
                         await ctx.send(embed=embed)
+
                     elif stream.totalViews != '0':
                         await ctx.send(holoStreamers[int(arg)-1].channel_title + ' is not currently streaming live nor has any upcoming livestreams~')
 
@@ -251,21 +255,24 @@ async def holoselect(ctx,arg):
     elif selectedGen == None:
         await ctx.send('Please select a generation first!')
 
+#Command used to search for anime and display a list of results
 @mango.command(name = 'animeSearch')
 async def animeSearch(ctx, arg):
     jikan.animeSearch(arg)
-    #Only proceed to send the embed if we actually have any anime to display. Else, let the user know that no anime were found
-    #This prevents the bot from sending an empty embed
+    #Only proceed to send the embed if we actually have any anime to display. Else, let the user know that no anime were found.
+    #This prevents the bot from sending an empty embed.
     if len(jikan.animeList)>0:
         embed = jikan.animeListDisplay(arg)
         await ctx.send(embed = embed)
+
     else:
         await ctx.send("No anime found for: '" + arg + "'")
 
+#Commnand used to select an anime from the displayed list of results
 @mango.command(name = 'animeSelect')
 async def animeSelect(ctx,arg):
     try:
-        #Make sure that we have sucesfully gotten a displayed list of anime
+        #Make sure that we have succesfully gotten a displayed list of anime
         if len(jikan.animeList)>0:
             await ctx.send(embed=jikan.animeEmbed(int(arg)-1))
 
@@ -274,5 +281,32 @@ async def animeSelect(ctx,arg):
 
     except (ValueError,IndexError):
         await ctx.send("Please enter a number from the displayed list!")
+
+#Command used to search for manga and display the results
+@mango.command(name = 'mangaSearch')
+async def mangaSearch (ctx, arg):
+    jikan.mangaSearch(arg)
+    #Only proceed to send the embed if we actually have any manga to display. Else, let the user know that no manga were found.
+    #This prevents the bot from sending an empty embed.
+    if len(jikan.mangaList)>0:
+        embed = jikan.mangaListDisplay(arg)
+        await ctx.send(embed = embed)
+
+    else:
+        await ctx.send("No manga found for: '" + arg + "'")
+
+#Command used to select manga from the displayed list of results
+@mango.command(name = 'mangaSelect')
+async def mangaSelect(ctx, arg):
+    try:
+        #Make sure that we have successfully gotten a displayed list of manga
+        if len(jikan.mangaList)>>0:
+            await ctx.send(embed = jikan.mangaEmbed(int(arg)-1))
+        
+        else:
+            await ctx.send("Please use m!mangaSearch <manga name> first!")
+    
+    except(ValueError,IndexError):
+        await ctx.send("Please enter a number from the displayed list")
 
 mango.run(TOKEN)
