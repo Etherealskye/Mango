@@ -1,13 +1,14 @@
 import os
 import discord
-from HololiveStreamer import hololiveStreamer
-from HololiveStream import HololiveStream
 import pandas as pd
 import youtube_api.youtube_api_utils
 from youtube_api import YouTubeDataAPI
 from dotenv import load_dotenv
 from discord.ext.commands import Bot
 from discord.ext import commands
+from HololiveStreamer import hololiveStreamer
+from HololiveStream import HololiveStream
+from JikanClient import JikanClient
 
 load_dotenv()   
 
@@ -24,6 +25,9 @@ mango = commands.Bot(command_prefix='m!')
 
 #create youtube data api client
 yt = YouTubeDataAPI(YT_KEY)
+
+#Create jikanClient to interact with JikanAPI
+jikan = JikanClient()
 
 @mango.event
 async def on_ready():   
@@ -227,7 +231,7 @@ async def holoselect(ctx,arg):
                         embed = discord.Embed(title = stream.streamTitle,description = stream.streamDesc,colour = discord.Colour(0x2abdb5))
                         
                         #Modify some attributes 
-                        embed.set_thumbnail(url=stream.streamThumbnail)
+                        embed.set_thumbnail(url = stream.streamThumbnail)
                         embed.set_author(name = stream.channelTitle,icon_url=stream.channelImage)
                         embed.url='https://www.youtube.com/watch?v='+stream.streamID
 
@@ -246,5 +250,29 @@ async def holoselect(ctx,arg):
     
     elif selectedGen == None:
         await ctx.send('Please select a generation first!')
+
+@mango.command(name = 'animeSearch')
+async def animeSearch(ctx, arg):
+    jikan.animeSearch(arg)
+    #Only proceed to send the embed if we actually have any anime to display. Else, let the user know that no anime were found
+    #This prevents the bot from sending an empty embed
+    if len(jikan.animeList)>0:
+        embed = jikan.animeListDisplay(arg)
+        await ctx.send(embed = embed)
+    else:
+        await ctx.send("No anime found for: '" + arg + "'")
+
+@mango.command(name = 'animeSelect')
+async def animeSelect(ctx,arg):
+    try:
+        #Make sure that we have sucesfully gotten a displayed list of anime
+        if len(jikan.animeList)>0:
+            await ctx.send(embed=jikan.animeEmbed(int(arg)-1))
+
+        else:
+            await ctx.send("Please use m!animeSearch <anime name> first!")
+
+    except (ValueError,IndexError):
+        await ctx.send("Please enter a number from the displayed list!")
 
 mango.run(TOKEN)
