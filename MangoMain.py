@@ -1,5 +1,6 @@
 import os
 import discord
+import sys
 import pandas as pd
 import youtube_api.youtube_api_utils
 from youtube_api import YouTubeDataAPI
@@ -35,7 +36,7 @@ async def on_ready():
     #Change status
 
 #Command to let user search for a livestream
-@mango.command(name = "holoStream")
+@mango.command(name = "holoStream", help = 'Use m!holoStream <channel name> to check if a channel is live or not')
 async def Hololive(ctx,arg):
     initialSearch = yt.search(q=arg, search_type='channel')
     #ID's we will be using for the channel and livestream to send requests
@@ -126,7 +127,7 @@ async def Hololive(ctx,arg):
                 +'If the channel displayed is not the hololive streamer you are looking for, try using m!hologen and m!holoselect to directly check their channel')
 
 #Command that lists all the supported hololive groups
-@mango.command(name='holoList')
+@mango.command(name='holoList', help = 'Displays list of supported hololive groups')
 async def hololist(ctx):
     embed = discord.Embed(title = "List of supported Hololive generations",description = '**0.** Hololive Gen 0\n' + '**1.** Hololive Gen 1\n' + '**2.** Hololive Gen 2\n'
     + '**3.** Hololive Gen 3\n' + '**4.** Hololive Gen 4\n'+ '**5.** Hololive gamers',
@@ -136,7 +137,7 @@ async def hololist(ctx):
     await ctx.send(embed = embed)
 
 #Command that brings up the members of a hololive group/generation
-@mango.command(name='holoGen')
+@mango.command(name='holoGen', help = 'Use m!holoGen <group number> to select a group from the displayed groups')
 async def hologen(ctx,arg):
     global holoStreamers
     global selectedGen
@@ -163,7 +164,7 @@ async def hologen(ctx,arg):
         await ctx.send('Please select a valid number from the displayed list!')
     
 #Command used to selelct a hololiveStreamers for more details on if they're livestreaming or not
-@mango.command(name='holoSelect')
+@mango.command(name='holoSelect', help = 'Use m!holoSelect <list number> to select a member from the group displayed')
 async def holoselect(ctx,arg):
     global selectedGen
     #Makes sure the user has actually selected a generation/group to select a member from
@@ -256,7 +257,7 @@ async def holoselect(ctx,arg):
         await ctx.send('Please select a generation first!')
 
 #Command used to search for anime and display a list of results
-@mango.command(name = 'animeSearch')
+@mango.command(name = 'animeSearch', help = 'Use m!animeSearch <anime name> to search for an anime and view a list of results')
 async def animeSearch(ctx, arg):
     jikan.animeSearch(arg)
     #Only proceed to send the embed if we actually have any anime to display. Else, let the user know that no anime were found.
@@ -269,7 +270,7 @@ async def animeSearch(ctx, arg):
         await ctx.send("No anime found for: '" + arg + "'")
 
 #Commnand used to select an anime from the displayed list of results
-@mango.command(name = 'animeSelect')
+@mango.command(name = 'animeSelect', help = 'Use m!animeSelect <anime number> to view an anime from the displayed list')
 async def animeSelect(ctx,arg):
     try:
         #Make sure that we have succesfully gotten a displayed list of anime
@@ -283,7 +284,7 @@ async def animeSelect(ctx,arg):
         await ctx.send("Please enter a number from the displayed list!")
 
 #Command used to search for manga and display the results
-@mango.command(name = 'mangaSearch')
+@mango.command(name = 'mangaSearch', help = 'Use m!mangaSearch <manga name> to search for a manga and view a displayed list of results')
 async def mangaSearch (ctx, arg):
     jikan.mangaSearch(arg)
     #Only proceed to send the embed if we actually have any manga to display. Else, let the user know that no manga were found.
@@ -296,7 +297,7 @@ async def mangaSearch (ctx, arg):
         await ctx.send("No manga found for: '" + arg + "'")
 
 #Command used to select manga from the displayed list of results
-@mango.command(name = 'mangaSelect')
+@mango.command(name = 'mangaSelect', help = 'Use m!mangaSelect <manga number> to view a manga from the displayed list of results')
 async def mangaSelect(ctx, arg):
     try:
         #Make sure that we have successfully gotten a displayed list of manga
@@ -308,5 +309,14 @@ async def mangaSelect(ctx, arg):
     
     except(ValueError,IndexError):
         await ctx.send("Please enter a number from the displayed list")
+
+@mango.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.errors.MissingRequiredArgument):
+        await ctx.send("Please enter the required arg(s)!")
+
+    if isinstance(error, commands.CommandNotFound):
+        await ctx.send("Please enter a valid command!")
+
 
 mango.run(TOKEN)
