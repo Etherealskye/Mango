@@ -108,7 +108,7 @@ class JikanClient:
                 descString = descString + "\n"
 
         embed = discord.Embed(
-            title = "List of anime found for '" + mangaName + "':",
+            title = "List of manga found for '" + mangaName + "':",
             description = descString,
             colour = discord.Colour(0x8d32e3)
         )
