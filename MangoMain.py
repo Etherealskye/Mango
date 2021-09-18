@@ -55,10 +55,11 @@ async def Hololive(ctx,arg):
     
     #If the channelID exists, proceed to see if they are live
     if(hasattr(stream,'channelID')):
-        channelState = yt.search(channel_id=stream.channelID, search_type='video', event_type='live',)
-        
+        channelState = yt.search(q = stream.channelTitle, event_type = "live", type = "video")
+        print(channelState)
         #If we get a response (meaning that the channel is live), proceed to grab the details of the stream and send it as an embed
-        if len(channelState)>0:
+        if len(channelState)>0 and channelState[0]['channel_id'] == stream.channelID:
+            print("here")
             stream.streamID = channelState[0]['video_id']
             stream.streamTitle = channelState[0]['video_title']
             stream.streamThumbnail = channelState[0]['video_thumbnail']
@@ -138,7 +139,7 @@ async def hololist(ctx):
 
 #Command that brings up the members of a hololive group/generation
 @mango.command(name='holoGen', help = 'Use m!holoGen <group number> to select a group from the displayed groups')
-async def hologen(ctx,arg):
+async def holoGen(ctx,arg):
     global holoStreamers
     global selectedGen
     holoStreamers.clear()
@@ -146,12 +147,16 @@ async def hologen(ctx,arg):
         selectedGen = int(arg)
         memberNum = os.getenv(arg + '_SIZE')
         displayString = ""
-        
+        print(memberNum)
         for i in range(int(memberNum)):
             currentID = os.getenv(arg+'.'+f'{i}')
+            print(currentID)
             nameSearch = yt.search(channel_id=currentID,search_type='channel')
+            print(nameSearch)
             channelName = nameSearch[0]['channel_title']
+            print(channelName)
             channelProfile = nameSearch[0]['video_thumbnail']
+            print(channelProfile)
             streamer = hololiveStreamer(group = arg, title = channelName, profile = channelProfile)
             holoStreamers.append(streamer)
             displayString = displayString + "**"+f'{i+1}'+ '.** ' + channelName +"\n"
